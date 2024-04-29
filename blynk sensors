@@ -1,0 +1,89 @@
+#define BLYNK_PRINT Serial
+
+#define BLYNK_TEMPLATE_ID ""
+#define BLYNK_TEMPLATE_NAME ""
+#define BLYNK_AUTH_TOKEN ""
+
+/* Comment this out to disable prints and save space */
+#include <ESP8266WiFi.h>
+#include <BlynkSimpleEsp8266.h>
+#include <DHT.h>
+
+BlynkTimer timer;
+
+#include <Wire.h>
+
+char auth[] = BLYNK_AUTH_TOKEN;
+char ssid[] = "";  // type your wifi name
+char pass[] = "";  // type your wifi password
+
+#define rain A0
+#define DHTPIN D4
+#define light D0
+
+DHT dht(D4, DHT11);
+
+void setup() {   
+  Serial.begin(9600);
+  
+  Blynk.begin(auth, ssid, pass);
+  dht.begin();
+ 
+  // Call the functions
+  timer.setInterval(100L, DHT11sensor);
+  timer.setInterval(100L, rainSensor); 
+  timer.setInterval(100L, LDRsensor);
+  }
+
+  //Get the DHT11 sensor values
+  void DHT11sensor() {
+    float h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  Serial.println(F("Humidity: "));
+  Serial.println(h);
+  Serial.println(F("Temperature: "));
+  Serial.println(t);
+    
+  Blynk.virtualWrite(V0, t);
+  Blynk.virtualWrite(V1, h);
+  }
+
+  void rainSensor() {
+  int value = analogRead(rain);
+  value = map(value, 0, 1023, 100, 0);//Converts the rainfall value from 0 to 100
+  
+  Serial.println("Rain level: ");
+  Serial.println(value);
+
+  delay(1000);
+  
+  Blynk.virtualWrite(V2, value);  //V2 is for Rainfall
+ 
+}
+
+//Get the LDR sensor values
+void LDRsensor() {
+  int lightValue = digitalRead(light);
+//lightValue = map(lightValue, 0, 1023, 50, 0);
+
+  Serial.println("Light level: ");
+  Serial.println(lightValue);
+
+  delay(1000);
+
+  Blynk.virtualWrite(V3, lightValue);
+  }
+
+void loop()
+{
+  Blynk.run();
+  timer.run();
+ }
